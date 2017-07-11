@@ -25,6 +25,8 @@ parser.add_option("-N", "--sim_name", dest="sim_name",
                        " give you the status of the latest run with that name."+ \
                        " if you want older runs from this name, then just point it directly at the"+\
                        " logfile with \"-l\"", default="")
+parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
+                  help="Constantly print stuff")
 
 (options, args) = parser.parse_args()
 options.logfile = options.logfile.strip()
@@ -32,10 +34,15 @@ options.sim_name = options.sim_name.strip()
 
 
 jobstatus_out_filename = "/tmp/job_status_out.txt"
+failed_job_file = None
 
 while True:
     jobstatus_out_file = open(jobstatus_out_filename, 'w+')
-    if subprocess.call(["./job_status.py" ,"-l", options.logfile, "-N", options.sim_name],
+
+    if options.verbose:
+        print "Calling job_status.py"
+
+    if subprocess.call([os.path.join(this_directory, "job_status.py") ,"-l", options.logfile, "-N", options.sim_name],
         stdout=jobstatus_out_file, stderr=jobstatus_out_file) < 0:
             exit("Error Launching job_status.py")
     else:
@@ -45,6 +52,8 @@ while True:
         num_not_done = 0
         num_else = 0
         for line in jobstatus_out_file.readlines():
+            if options.verbose:
+                print line.strip()
             if jobStatusCol == None:
                 name_line_match = re.match("(.*)JobStatus.*", line)
                 if name_line_match != None:
@@ -52,7 +61,10 @@ while True:
                     continue
             else:
                 tokens = line.split('\t')
-                if len(tokens) > jobStatusCol:
+                fail_match = re.match("failed job log written to (.*)", line)
+                if fail_match != None:
+                    failed_job_file = fail_match.group(1)
+                elif len(tokens) > jobStatusCol:
                     status = tokens[jobStatusCol].strip()
                     if status == "FUNC_TEST_PASSED":
                         num_passed += 1
@@ -60,8 +72,6 @@ while True:
                         num_not_done += 1
                     else:
                         num_else += 1
-                elif re.match("failed job log.*", line):
-                    failed_job_file = line
 
         jobstatus_out_file.close()
         os.remove(jobstatus_out_filename)
@@ -70,14 +80,18 @@ while True:
     print "Passed:{0}/{1}, Not passed:{2}/{1}, Not done:{3}/{1}"\
         .format(num_passed, total, num_else, num_not_done)
     if num_else > 0:
-            print failed_job_file
+        print "Contents {0}:".format(failed_job_file)
+        if options.verbose:
+            print open(failed_job_file).read()
+
     if num_not_done == 0:
         print "All {0} Tests Done.".format(total)
         if num_else == 0:
             print "Congratulations! All Tests Pass!"
+            exit(0)
         else:
             print "Something did not pass."
-        break
+            exit(1)
     else:
         print "Sleeping for 30s"
         time.sleep(30)
