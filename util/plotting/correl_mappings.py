@@ -17,7 +17,8 @@ config_maps = \
     "GTX1080Ti" : "GeForce GTX 1080 Ti",
     "QV100" : "Quadro GV100",
 	"QV100_old" : "Quadro GV100",
-	"QV100_SASS" : "Quadro GV100"
+	"QV100_SASS" : "Quadro GV100",
+    "RTX2060" : "RTX2060",
 
 }
 
@@ -103,6 +104,16 @@ correl_list = \
         hw_name="Quadro GV100",
         drophwnumbelow=0,
         plottype="log"
+    ),
+    CorrelStat(chart_name="RTX 2060 SM Cycles",
+        plotfile="rtx2060_sm_cycles",
+        hw_eval="np.average(hw[\"gpc__cycles_elapsed.avg\"])",
+        hw_error="np.max(hw[\"gpc__cycles_elapsed.avg\"]) - np.average(hw[\"gpc__cycles_elapsed.avg\"]),"+\
+                 "np.average(hw[\"gpc__cycles_elapsed.avg\"]) - np.min(hw[\"gpc__cycles_elapsed.avg\"])",
+        sim_eval="float(sim[\"gpu_tot_sim_cycle\s*=\s*(.*)\"])",
+        hw_name="RTX2060",
+        drophwnumbelow=0,
+        plottype="log",
     ),
     CorrelStat(chart_name="Cycles",
         plotfile="titanx_sm_cycles",
