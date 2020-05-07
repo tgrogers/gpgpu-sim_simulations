@@ -1,0 +1,2 @@
+.*polybench-syrk.*
+.*mem_lat.*
